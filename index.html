@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mensagem</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ctext y=%2213%22 font-size=%2213%22%3E%E2%80%A2%3C/text%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #ffffff;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #14140f;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 440px;
+    padding: 48px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 26px;
+    /* base state for the crossfade helper: every screen enters/leaves through this.
+       Duration bumped from 0.5s to 0.7s and easing kept expressive (slow-in/fast-out)
+       so the swap reads as a deliberate app transition, not a flicker. */
+    transition: opacity 0.7s cubic-bezier(.22,.61,.36,1), transform 0.7s cubic-bezier(.22,.61,.36,1), filter 0.7s ease;
+  }
+
+  .card.leaving {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.94);
+    filter: blur(6px);
+  }
+
+  .card.entering {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+    filter: blur(6px);
+  }
+
+  .rule {
+    width: 28px;
+    height: 2px;
+    background: #14140f;
+    border-radius: 2px;
+  }
+
+  .message {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+
+  .action-btn {
+    border: none;
+    background: #2f5fe0;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    padding: 15px 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .action-btn:hover { background: #2953c9; transform: translateY(-1px); }
+  .action-btn:active { transform: translateY(0); }
+
+  /* loading state now doubles as a small "app-like" progress signal, not just dots */
+  .loading-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .loading-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #9a9a90;
+    letter-spacing: 0.02em;
+  }
+
+  /* the animated ellipsis lives in its own span so it can tick independently
+     of the label text — see loadingScreen() in the script for the interval logic */
+  .loading-text .dots {
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+  }
+
+  .progress-track {
+    width: 120px;
+    height: 2px;
+    background: #e5e5df;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #2f5fe0;
+    border-radius: 2px;
+    /* duration is set inline per call, since the two loading moments last different lengths */
+  }
+
+  .choice-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .choice-btn {
+    border: 1px solid #14140f;
+    background: transparent;
+    color: #14140f;
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .choice-btn:hover { background: #14140f; color: #ffffff; }
+
+  /* affirmative choice (Oi / Sim!): white text on a green fill, so the "yes"
+     path is legible as a single color at a glance, no need to read the word */
+  .choice-btn.positive {
+    border: 1px solid #1f8a3d;
+    background: #1f8a3d;
+    color: #ffffff;
+  }
+  .choice-btn.positive:hover { background: #196e31; border-color: #196e31; }
+
+  /* negative choice (Nada a ver / a recusa brincalhona): same treatment, red fill */
+  .choice-btn.negative {
+    border: 1px solid #c73434;
+    background: #c73434;
+    color: #ffffff;
+  }
+  .choice-btn.negative:hover { background: #a82929; border-color: #a82929; }
+
+  .thanks {
+    font-size: 20px;
+    color: #9a9a90;
+    font-weight: 500;
+  }
+
+  .admin-link {
+    position: fixed;
+    bottom: 10px;
+    right: 14px;
+    font-size: 10px;
+    color: #e3e3dc;
+    text-decoration: none;
+    user-select: none;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <div class="rule"></div>
+    <div class="message">Oi, Catherine</div>
+    <button class="action-btn" id="btnStart">Clique Aqui</button>
+  </div>
+
+  <a class="admin-link" id="adminLink" href="#">·</a>
+
+<script>
+  const card = document.getElementById('card');
+  const SUPABASE_URL = 'https://oziequrhypzbfdynnnda.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96aWVxdXJoeXB6YmZkeW5ubmRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTU3OTEsImV4cCI6MjA4OTYzMTc5MX0.dU0_ISLUdDVAh0XQ4wLFlDXf4ZTOuRh__4_mcp0aFxo';
+  const INVITE_ID = 'catherine-2026-07';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // every response the recipient gives gets a namespaced key so multiple sends don't collide
+  const STORAGE_KEY_PREFIX = 'catherine-resposta:';
+  // tracks the setInterval driving the animated "..." during a loading screen,
+  // so swapTo can kill it before the next screen renders — otherwise the interval
+  // keeps firing against a detached span after card.innerHTML is cleared
+  let loadingDotsInterval = null;
+
+  /*
+    swapTo(renderFn) is the single choreography point for every screen change.
+    It fades + blurs the current content out, clears it, runs renderFn to build
+    the next screen, then fades it back in. Centralizing this in one helper is
+    what gives the "modern app" feel — every transition in the flow, no matter
+    which button triggered it, goes through the same motion.
+  */
+  async function swapTo(renderFn) {
+    if (loadingDotsInterval) { clearInterval(loadingDotsInterval); loadingDotsInterval = null; }
+    card.classList.add('leaving');
+    // must match (or trail slightly behind) the 0.7s CSS transition on .card,
+    // otherwise we'd clear the DOM before the fade-out finishes and it'd look like a jump cut
+    await wait(650);
+    card.innerHTML = '';
+    renderFn();
+    card.classList.remove('leaving');
+    card.classList.add('entering');
+    // force reflow so the browser registers the "entering" state before we remove it
+    void card.offsetWidth;
+    card.classList.remove('entering');
+  }
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function rule() {
+    const r = document.createElement('div');
+    r.className = 'rule';
+    card.appendChild(r);
+  }
+
+  function message(text) {
+    const m = document.createElement('div');
+    m.className = 'message';
+    m.textContent = text;
+    card.appendChild(m);
+  }
+
+  function actionButton(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'action-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick, { once: true });
+    card.appendChild(b);
+  }
+
+  function choiceRow(labelA, onA, variantA, labelB, onB, variantB) {
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    const a = document.createElement('button');
+    a.className = 'choice-btn ' + variantA;
+    a.textContent = labelA;
+    const b = document.createElement('button');
+    b.className = 'choice-btn ' + variantB;
+    b.textContent = labelB;
+    row.appendChild(a);
+    row.appendChild(b);
+    card.appendChild(row);
+    a.addEventListener('click', onA, { once: true });
+    b.addEventListener('click', onB, { once: true });
+  }
+
+  /*
+    loadingScreen only renders the label + progress bar and starts the fill
+    animation; it does NOT own the delay. The caller (onFirstClick / onSecondClick /
+    onThirdClick) awaits its own wait(durationMs) afterward — keeping "how long we
+    wait" and "what's on screen while waiting" as two separate, explicit steps
+    rather than bundling both inside one function.
+
+    The ellipsis after the label is animated (1, 2, 3 dots, looping) rather than
+    a static "...", since a moving ellipsis reads as active work happening —
+    the interval id is stored in the module-level loadingDotsInterval so swapTo
+    can clear it before the next screen replaces this DOM.
+  */
+  function loadingScreen(text, durationMs) {
+    const wrap = document.createElement('div');
+    wrap.className = 'loading-wrap';
+    wrap.innerHTML =
+      '<div class="loading-text">' + text + '<span class="dots"></span></div>' +
+      '<div class="progress-track"><div class="progress-fill" style="transition: width ' + durationMs + 'ms linear;"></div></div>';
+    card.appendChild(wrap);
+
+    const dotsEl = wrap.querySelector('.dots');
+    let step = 0;
+    dotsEl.textContent = '.';
+    loadingDotsInterval = setInterval(() => {
+      step = (step + 1) % 3;
+      dotsEl.textContent = '.'.repeat(step + 1);
+    }, 400);
+
+    const fill = wrap.querySelector('.progress-fill');
+    // reflow before setting width so the transition actually animates from 0
+    requestAnimationFrame(() => { fill.style.width = '100%'; });
+  }
+
+  async function saveResponse(value) {
+    // The live table's CHECK constraint and RLS insert policy accept ONLY the
+    // design's own outcome vocabulary: oi / nada_a_ver / sim_jantar / recusou_jantar.
+    // Remapping to yes/no/maybe is rejected (Postgres error 23514), so the design's
+    // native value is passed through unchanged — this is the verified direct mapping.
+    try {
+      const { error } = await supabaseClient
+        .from('personal_dinner_invite_responses')
+        .insert({ invite_id: INVITE_ID, response: value, user_agent: navigator.userAgent, page_url: location.href });
+      if (error) console.error('Falha ao salvar resposta', error);
+    } catch (e) {
+      console.error('Falha ao salvar resposta', e);
+    }
+  }
+
+  // the "Oi, Catherine" + "Clique Aqui" screen is now the initial state (rendered
+  // statically in the card above), so the first click goes straight to the flow
+  document.getElementById('btnStart').addEventListener('click', onFirstClick, { once: true });
+
+  async function onFirstClick() {
+    await swapTo(() => { loadingScreen('Carregando', 2200); });
+    await wait(2200);
+    swapTo(() => {
+      rule();
+      message('Oi, Catherine');
+      actionButton('Clique de novo', onSecondClick);
+    });
+  }
+
+  async function onSecondClick() {
+    await swapTo(() => { loadingScreen('Carregando', 2600); });
+    await wait(2600);
+    swapTo(() => {
+      rule();
+      message('Oi, Catherine');
+      actionButton('Clique mais uma vez', onThirdClick);
+    });
+  }
+
+  async function onThirdClick() {
+    await swapTo(() => { loadingScreen('Carregando uma última vez', 3000); });
+    await wait(3000);
+    swapTo(() => {
+      rule();
+      message('Oi ou nada a ver?');
+      choiceRow('Oi', onOi, 'positive', 'Nada a ver', onNadaAVer, 'negative');
+    });
+  }
+
+  async function onOi() {
+    await saveResponse('oi');
+    swapTo(() => {
+      rule();
+      message('Te busco para jantarmos na sexta-feira, às 20h30?');
+      choiceRow('Sim!', onSimJantar, 'positive', 'Kkkkkk tchau mas boa tentativa', onRecusou, 'negative');
+    });
+  }
+
+  async function onNadaAVer() {
+    await saveResponse('nada_a_ver');
+    swapTo(() => {
+      const t = document.createElement('div');
+      t.className = 'thanks';
+      t.textContent = 'tudo bem';
+      card.appendChild(t);
+    });
+  }
+
+  async function onSimJantar() {
+    await saveResponse('sim_jantar');
+    swapTo(() => {
+      rule();
+      message('Combinado \uD83D\uDE18');
+    });
+  }
+
+  async function onRecusou() {
+    await saveResponse('recusou_jantar');
+    swapTo(() => {
+      const t = document.createElement('div');
+      t.className = 'thanks';
+      t.textContent = 'ah não \uD83D\uDE2D';
+      card.appendChild(t);
+    });
+  }
+
+  // discreet viewer: click the small dot 5 times fast to list saved responses
+  let clicks = 0, clickTimer = null;
+  document.getElementById('adminLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    clicks++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clicks = 0; }, 1200);
+    if (clicks >= 5) {
+      clicks = 0;
+      try {
+        const { data, error } = await supabaseClient
+          .from('personal_dinner_invite_responses')
+          .select('response, created_at')
+          .eq('invite_id', INVITE_ID)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        const rows = data || [];
+        alert(rows.length ? rows.map(r => r.response.toUpperCase() + ' — ' + new Date(r.created_at).toLocaleString('pt-BR')).join('\n') : 'sem respostas ainda');
+      } catch (err) {
+        alert('erro ao ler respostas');
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
