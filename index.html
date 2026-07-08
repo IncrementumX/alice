@@ -343,7 +343,7 @@
     await saveResponse('oi');
     swapTo(() => {
       rule();
-      message('Te busco para jantarmos no sábado, às 20h30?');
+      message('te busco no sábado às 20h00 para jantarmos?');
       choiceRow('Sim!', onSimJantar, 'positive', 'Kkkkkk tchau mas boa tentativa', onRecusou, 'negative');
     });
   }
