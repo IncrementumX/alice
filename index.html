@@ -335,7 +335,7 @@
     swapTo(() => {
       rule();
       message('Oi ou nada a ver?');
-      choiceRow('Oi', onOi, 'positive', 'Nada a ver', onNadaAVer, 'negative');
+      choiceRow('(De novo? oi)', onOi, 'positive', 'Nada a ver', onNadaAVer, 'negative');
     });
   }
 
@@ -343,7 +343,7 @@
     await saveResponse('oi');
     swapTo(() => {
       rule();
-      message('Te busco para jantarmos na sexta-feira, às 20h30?');
+      message('Te busco para jantarmos no sábado, às 20h30?');
       choiceRow('Sim!', onSimJantar, 'positive', 'Kkkkkk tchau mas boa tentativa', onRecusou, 'negative');
     });
   }
