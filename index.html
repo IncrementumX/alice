@@ -138,7 +138,7 @@
     min-height: 54px;
   }
   .choice-btn:hover { background: #14140f; color: #ffffff; }
-  .choice-btn .line { display: block; }
+  .choice-btn .line { display: block; white-space: nowrap; }
 
   /* affirmative choice (Oi / Sim!): white text on a green fill, so the "yes"
      path is legible as a single color at a glance, no need to read the word */
@@ -386,7 +386,7 @@
     swapTo(() => {
       rule();
       messageTwoLines('Oi amor,', 'tenho um reminder');
-      choiceRow(['To curiosa,', 'o q?'], onCuriosa, 'positive', 'kkkkkkk, tchau', onTchau, 'negative');
+      choiceRow(['to curiosa,', 'o q?'], onCuriosa, 'positive', 'kkkkkkk, tchau', onTchau, 'negative');
     });
   }
 
@@ -406,7 +406,7 @@
     swapTo(() => {
       const t = document.createElement('div');
       t.className = 'thanks';
-      t.textContent = 'tudo bem';
+      t.textContent = '😭';
       card.appendChild(t);
     });
   }
