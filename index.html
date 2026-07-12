@@ -163,6 +163,16 @@
     font-weight: 500;
   }
 
+  .rose-message {
+    font-size: 72px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
   .admin-link {
     position: fixed;
     bottom: 10px;
@@ -244,6 +254,13 @@
     b.textContent = lineB;
     m.appendChild(a);
     m.appendChild(b);
+    card.appendChild(m);
+  }
+
+  function roseMessage() {
+    const m = document.createElement('div');
+    m.className = 'rose-message';
+    m.textContent = '🌹🌹🌹';
     card.appendChild(m);
   }
 
@@ -397,8 +414,7 @@
   async function onRiu() {
     trackResponse('sim_jantar');
     swapTo(() => {
-      rule();
-      message('🌹🌹🌹');
+      roseMessage();
     });
   }
 
