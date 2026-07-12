@@ -135,8 +135,10 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
+    min-height: 54px;
   }
   .choice-btn:hover { background: #14140f; color: #ffffff; }
+  .choice-btn .line { display: block; }
 
   /* affirmative choice (Oi / Sim!): white text on a green fill, so the "yes"
      path is legible as a single color at a glance, no need to read the word */
@@ -245,10 +247,23 @@
     card.appendChild(m);
   }
 
+  function setButtonLabel(button, label) {
+    if (Array.isArray(label)) {
+      label.forEach(line => {
+        const span = document.createElement('span');
+        span.className = 'line';
+        span.textContent = line;
+        button.appendChild(span);
+      });
+    } else {
+      button.textContent = label;
+    }
+  }
+
   function actionButton(label, onClick) {
     const b = document.createElement('button');
     b.className = 'action-btn';
-    b.textContent = label;
+    setButtonLabel(b, label);
     b.addEventListener('click', onClick, { once: true });
     card.appendChild(b);
   }
@@ -258,10 +273,10 @@
     row.className = 'choice-row';
     const a = document.createElement('button');
     a.className = 'choice-btn ' + variantA;
-    a.textContent = labelA;
+    setButtonLabel(a, labelA);
     const b = document.createElement('button');
     b.className = 'choice-btn ' + variantB;
-    b.textContent = labelB;
+    setButtonLabel(b, labelB);
     row.appendChild(a);
     row.appendChild(b);
     card.appendChild(row);
@@ -309,8 +324,7 @@
   async function saveResponse(value) {
     // The live table's CHECK constraint and RLS insert policy accept ONLY the
     // design's own outcome vocabulary: oi / nada_a_ver / sim_jantar / recusou_jantar.
-    // Remapping to yes/no/maybe is rejected (Postgres error 23514), so the design's
-    // native value is passed through unchanged — this is the verified direct mapping.
+    // Keep saving in the background so network latency never blocks the tap animation.
     try {
       const { error } = await supabaseClient
         .from('personal_dinner_invite_responses')
@@ -319,6 +333,10 @@
     } catch (e) {
       console.error('Falha ao salvar resposta', e);
     }
+  }
+
+  function trackResponse(value) {
+    saveResponse(value);
   }
 
   // the "Oi, Alice" + "Clique Aqui" screen is now the initial state (rendered
@@ -351,12 +369,12 @@
     swapTo(() => {
       rule();
       messageTwoLines('Oi amor,', 'tenho um reminder');
-      choiceRow('To curiosa, o q?', onCuriosa, 'positive', 'kkkkkkk, tchau', onTchau, 'negative');
+      choiceRow(['To curiosa,', 'o q?'], onCuriosa, 'positive', 'kkkkkkk, tchau', onTchau, 'negative');
     });
   }
 
   async function onCuriosa() {
-    await saveResponse('oi');
+    trackResponse('oi');
     await swapTo(() => { softPauseScreen(); });
     await wait(2000);
     swapTo(() => {
@@ -367,7 +385,7 @@
   }
 
   async function onTchau() {
-    await saveResponse('nada_a_ver');
+    trackResponse('nada_a_ver');
     swapTo(() => {
       const t = document.createElement('div');
       t.className = 'thanks';
@@ -377,7 +395,7 @@
   }
 
   async function onRiu() {
-    await saveResponse('sim_jantar');
+    trackResponse('sim_jantar');
     swapTo(() => {
       rule();
       message('🌹🌹🌹');
@@ -385,7 +403,7 @@
   }
 
   async function onGhost() {
-    await saveResponse('recusou_jantar');
+    trackResponse('recusou_jantar');
     swapTo(() => {
       const t = document.createElement('div');
       t.className = 'thanks';
