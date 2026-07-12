@@ -233,6 +233,18 @@
     card.appendChild(m);
   }
 
+  function messageTwoLines(lineA, lineB) {
+    const m = document.createElement('div');
+    m.className = 'message';
+    const a = document.createElement('div');
+    const b = document.createElement('div');
+    a.textContent = lineA;
+    b.textContent = lineB;
+    m.appendChild(a);
+    m.appendChild(b);
+    card.appendChild(m);
+  }
+
   function actionButton(label, onClick) {
     const b = document.createElement('button');
     b.className = 'action-btn';
@@ -291,24 +303,7 @@
   }
 
   function softPauseScreen() {
-    const wrap = document.createElement('div');
-    wrap.className = 'loading-wrap';
-    wrap.innerHTML =
-      '<div class="rule"></div>' +
-      '<div class="loading-text">só um segundo<span class="dots"></span></div>' +
-      '<div class="progress-track"><div class="progress-fill" style="transition: width 2000ms cubic-bezier(.22,.61,.36,1);"></div></div>';
-    card.appendChild(wrap);
-
-    const dotsEl = wrap.querySelector('.dots');
-    let step = 0;
-    dotsEl.textContent = '.';
-    loadingDotsInterval = setInterval(() => {
-      step = (step + 1) % 3;
-      dotsEl.textContent = '.'.repeat(step + 1);
-    }, 420);
-
-    const fill = wrap.querySelector('.progress-fill');
-    requestAnimationFrame(() => { fill.style.width = '100%'; });
+    loadingScreen('Carregando', 2000);
   }
 
   async function saveResponse(value) {
@@ -331,8 +326,8 @@
   document.getElementById('btnStart').addEventListener('click', onFirstClick, { once: true });
 
   async function onFirstClick() {
-    await swapTo(() => { loadingScreen('Carregando', 2200); });
-    await wait(2200);
+    await swapTo(() => { loadingScreen('Carregando', 1200); });
+    await wait(1200);
     swapTo(() => {
       rule();
       message('Oi, Alice');
@@ -341,8 +336,8 @@
   }
 
   async function onSecondClick() {
-    await swapTo(() => { loadingScreen('Carregando', 2600); });
-    await wait(2600);
+    await swapTo(() => { loadingScreen('Carregando', 1600); });
+    await wait(1600);
     swapTo(() => {
       rule();
       message('Oi, Alice');
@@ -351,11 +346,11 @@
   }
 
   async function onThirdClick() {
-    await swapTo(() => { loadingScreen('Carregando uma última vez', 3000); });
-    await wait(3000);
+    await swapTo(() => { loadingScreen('Carregando uma última vez', 2000); });
+    await wait(2000);
     swapTo(() => {
       rule();
-      message('Oi amor, tenho um reminder');
+      messageTwoLines('Oi amor,', 'tenho um reminder');
       choiceRow('To curiosa, o q?', onCuriosa, 'positive', 'kkkkkkk, tchau', onTchau, 'negative');
     });
   }
@@ -385,7 +380,7 @@
     await saveResponse('sim_jantar');
     swapTo(() => {
       rule();
-      message('Combinado 😘');
+      message('🌹🌹🌹');
     });
   }
 
