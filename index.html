@@ -177,7 +177,7 @@
 
   <div class="card" id="card">
     <div class="rule"></div>
-    <div class="message">Oi, Catherine</div>
+    <div class="message">Oi, Alice</div>
     <button class="action-btn" id="btnStart">Clique Aqui</button>
   </div>
 
@@ -187,10 +187,10 @@
   const card = document.getElementById('card');
   const SUPABASE_URL = 'https://oziequrhypzbfdynnnda.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96aWVxdXJoeXB6YmZkeW5ubmRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTU3OTEsImV4cCI6MjA4OTYzMTc5MX0.dU0_ISLUdDVAh0XQ4wLFlDXf4ZTOuRh__4_mcp0aFxo';
-  const INVITE_ID = 'catherine-2026-07';
+  const INVITE_ID = 'alice-2026-07';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   // every response the recipient gives gets a namespaced key so multiple sends don't collide
-  const STORAGE_KEY_PREFIX = 'catherine-resposta:';
+  const STORAGE_KEY_PREFIX = 'alice-resposta:';
   // tracks the setInterval driving the animated "..." during a loading screen,
   // so swapTo can kill it before the next screen renders — otherwise the interval
   // keeps firing against a detached span after card.innerHTML is cleared
@@ -305,7 +305,7 @@
     }
   }
 
-  // the "Oi, Catherine" + "Clique Aqui" screen is now the initial state (rendered
+  // the "Oi, Alice" + "Clique Aqui" screen is now the initial state (rendered
   // statically in the card above), so the first click goes straight to the flow
   document.getElementById('btnStart').addEventListener('click', onFirstClick, { once: true });
 
@@ -314,7 +314,7 @@
     await wait(2200);
     swapTo(() => {
       rule();
-      message('Oi, Catherine');
+      message('Oi, Alice');
       actionButton('Clique de novo', onSecondClick);
     });
   }
@@ -324,7 +324,7 @@
     await wait(2600);
     swapTo(() => {
       rule();
-      message('Oi, Catherine');
+      message('Oi, Alice');
       actionButton('Clique mais uma vez', onThirdClick);
     });
   }
